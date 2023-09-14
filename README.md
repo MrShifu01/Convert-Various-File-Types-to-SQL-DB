@@ -32,6 +32,10 @@ pip install pandas pyodbc
    - Set the `table_name` variable to the name of the table where you want to write the data.
    - Set the `server_name` variable to the name of your SQL Server instance.
 
+---
+    Remember to make sure the directory path in `watcher.py` is set to the correct path and pointing at the correct directory
+---
+
 4. Run the program by executing the `main.py` file:
 ```
 python main.py
