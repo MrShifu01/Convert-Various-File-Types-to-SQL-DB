@@ -4,7 +4,7 @@ from watchdog.observers import Observer
 from handler import Handler
 
 class Watcher:
-    DIRECTORY_TO_WATCH = r"C:\Users\ChristianStander\Documents\Work\Database practice\Weather\Weather\JSON"
+    DIRECTORY_TO_WATCH = r"C:\Users\ChristianStander\Documents\Work\Database practice\Weather\Weather\Test"
 
     def __init__(self, db_name, table_name, server_name):
         self.observer = Observer()

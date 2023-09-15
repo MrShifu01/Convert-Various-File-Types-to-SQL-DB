@@ -5,10 +5,24 @@ import pyodbc
 def db_to_sql(file_path, db_name, table_name, server_name):
     try:
         conn = sqlite3.connect(file_path)
-        df = pd.read_sql_query("SELECT * FROM your_table", conn)
+        cursor = conn.cursor()
+
+        # Retrieve table names from the SQLite database
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+
+        # Process the table names as needed
+        for table in tables:
+            # Perform operations with each table name
+            print(table[0])
+
+        conn.close()
     except Exception as e:
         print(f"Could not read DB file {file_path}: {e}")
         return False
+
+    # Add the missing assignment for the variable 'df'
+    df = pd.DataFrame()
 
  # Step 2: Remove whitespace from strings
     df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)

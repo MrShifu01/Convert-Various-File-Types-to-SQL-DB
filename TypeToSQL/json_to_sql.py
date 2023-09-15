@@ -1,21 +1,48 @@
 import pandas as pd
 import pyodbc
+import json
+from datetime import datetime, timedelta
 
 def json_to_sql(file_path, db_name, table_name, server_name):
     try:
-        df = pd.read_json(file_path)
+        with open(file_path, 'r') as f:
+            data = json.load(f)
     except Exception as e:
         print(f"Could not read JSON file {file_path}: {e}")
-        return False
+        return
 
-    # Step 2: Remove whitespace from strings
-    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    # Define the nested fields to be converted to datetime
+    nested_fields = [
+        "clockIn", "clockOut", "lunchTime", 
+        "normalHours", "overtimeHours", "sundayOvertime", "holidayTime"
+    ]
 
-    # Shorten column names to fit SQL Server's limit
-    df.columns = [col[:128] for col in df.columns]
+    # Convert nested dictionaries to datetime
+    for record in data:
+        # Convert date field to datetime object
+        base_date = datetime.fromisoformat(record["date"].replace("T", " "))
+        
+        for field in nested_fields:
+            if field in record and isinstance(record[field], dict):
+                hours = record[field]["hours"]
+                minutes = record[field]["minutes"]
+                seconds = record[field]["seconds"]
+                milliseconds = record[field]["milliseconds"]
+                # Construct the full datetime
+                full_datetime = base_date.replace(hour=hours, minute=minutes, second=seconds, microsecond=milliseconds*1000)
+                # Convert the full datetime to the desired string format
+                record[field] = full_datetime.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
 
+        # Convert boolean values to integers
+        for key, value in record.items():
+            if isinstance(value, bool):
+                record[key] = int(value)
+
+    # Create a main dataframe
+    main_df = pd.DataFrame(data)
+
+    # Connect to the SQL server and create the database if it doesn't exist
     conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE=master;Trusted_Connection=yes'
-
     try:
         conn = pyodbc.connect(conn_str, autocommit=True)
         cursor = conn.cursor()
@@ -25,8 +52,8 @@ def json_to_sql(file_path, db_name, table_name, server_name):
         print(f"Could not create or connect to database: {e}")
         return
 
+    # Connect to the created database
     conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE={db_name};Trusted_Connection=yes'
-
     try:
         conn = pyodbc.connect(conn_str)
         cursor = conn.cursor()
@@ -34,41 +61,24 @@ def json_to_sql(file_path, db_name, table_name, server_name):
         print(f"Could not connect to database: {e}")
         return
 
+    # Create the main table and nested tables with appropriate relationships
     try:
-        cols = ", ".join([f"[{col}] NVARCHAR(MAX)" if col != 'PrimaryKey' else "[PrimaryKey] INT" for col in df.columns])
-        cursor.execute(f"""IF OBJECT_ID('{table_name}', 'U') IS NULL CREATE TABLE {table_name} ([PrimaryKey] INT IDENTITY(1,1) PRIMARY KEY, {cols})""")
+        # Create the main table
+        main_cols = ", ".join([f"[{col}] NVARCHAR(MAX)" for col in main_df.columns])
+        cursor.execute(f"IF OBJECT_ID('{table_name}', 'U') IS NULL CREATE TABLE {table_name} ([ID] INT IDENTITY(1,1) PRIMARY KEY, {main_cols})")
 
-        # print(f"Table {table_name} created successfully with columns: {cols}")
     except Exception as e:
         print(f"Could not create table: {e}")
         return
 
-    # Prepare data and query for the MERGE operation
+    # Insert data into the main table and nested tables
     try:
-        # Get the list of columns excluding 'PrimaryKey'
-        columns = [col for col in df.columns if col != 'PrimaryKey']
-        columns_bracketed = [f"[{col}]" for col in columns]
-
-        # Generate ON clause using all columns (other than 'PrimaryKey')
-        on_conditions = " AND ".join([f"Target.{col} = Source.{col}" for col in columns_bracketed])
-
-        for index, row in df.iterrows():
-            # Get the values excluding 'PrimaryKey' column
-            values = ", ".join([f"'{value}'" for col, value in zip(df.columns, row.astype(str).values) if col != 'PrimaryKey'])
-
-            # Construct the merge query using the formatted values and conditions
-            merge_query = f"""
-                MERGE INTO [{table_name}] AS Target
-                USING (VALUES ({values})) AS Source ({', '.join(columns_bracketed)})
-                ON ({on_conditions})
-                WHEN MATCHED THEN 
-                    UPDATE SET {', '.join([f'Target.{col} = Source.{col}' for col in columns_bracketed])}
-                WHEN NOT MATCHED BY TARGET THEN
-                    INSERT ({', '.join(columns_bracketed)})
-                    VALUES ({', '.join([f'Source.{col}' for col in columns_bracketed])});
-                """
-            
-            cursor.execute(merge_query)
+        for index, row in main_df.iterrows():
+            # Insert data into the main table and retrieve the primary key
+            values = ", ".join([f"'{value}'" for value in row.astype(str).values])
+            cursor.execute(f"INSERT INTO [{table_name}] ({', '.join(main_df.columns)}) OUTPUT INSERTED.ID VALUES ({values})")
+            pk = cursor.fetchone()[0]
+        
         conn.commit()
     except Exception as e:
         print(f"Could not perform UPSERT operation: {e}")
@@ -76,5 +86,3 @@ def json_to_sql(file_path, db_name, table_name, server_name):
 
     print(f"Data from {file_path} has been written to {db_name}.{table_name}")
     return True
-
-# Usage: You'd call this function with the appropriate arguments to use it.
