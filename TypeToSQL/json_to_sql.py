@@ -3,7 +3,7 @@ import pyodbc
 import json
 from datetime import datetime, timedelta
 
-def json_to_sql(file_path, db_name, table_name, server_name):
+def json_to_sql(file_path, db_name, table_name, server_name, username, password):
     try:
         with open(file_path, 'r') as f:
             data = json.load(f)
@@ -42,7 +42,7 @@ def json_to_sql(file_path, db_name, table_name, server_name):
     main_df = pd.DataFrame(data)
 
     # Connect to the SQL server and create the database if it doesn't exist
-    conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE=master;Trusted_Connection=yes'
+    conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE=master;UID={username};PWD={password}'
     try:
         conn = pyodbc.connect(conn_str, autocommit=True)
         cursor = conn.cursor()
@@ -53,7 +53,7 @@ def json_to_sql(file_path, db_name, table_name, server_name):
         return
 
     # Connect to the created database
-    conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE={db_name};Trusted_Connection=yes'
+    conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE={db_name};UID={username};PWD={password}'
     try:
         conn = pyodbc.connect(conn_str)
         cursor = conn.cursor()

@@ -2,7 +2,7 @@ import sqlite3
 import pandas as pd
 import pyodbc
 
-def db_to_sql(file_path, db_name, table_name, server_name):
+def db_to_sql(file_path, db_name, table_name, server_name, username, password):
     try:
         conn = sqlite3.connect(file_path)
         cursor = conn.cursor()
@@ -30,7 +30,7 @@ def db_to_sql(file_path, db_name, table_name, server_name):
     # Shorten column names to fit SQL Server's limit
     df.columns = [col[:128] for col in df.columns]
 
-    conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE=master;Trusted_Connection=yes'
+    conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE=master;UID={username};PWD={password}'
 
     try:
         conn = pyodbc.connect(conn_str, autocommit=True)
@@ -41,7 +41,7 @@ def db_to_sql(file_path, db_name, table_name, server_name):
         print(f"Could not create or connect to database: {e}")
         return
 
-    conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE={db_name};Trusted_Connection=yes'
+    conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE={db_name};UID={username};PWD={password}'
 
     try:
         conn = pyodbc.connect(conn_str)

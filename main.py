@@ -1,9 +1,26 @@
-# main.py
+import pyodbc
 from watcher import Watcher
 
-server_name = 'CHRISTIAN-LT\SQLEXPRESS01'
-db_name = 'TestDatabase'
-table_name = 'TestTableJSONTest3'
+server = '102.221.36.221,9555'
+database = 'CHRISTIAN_TEST'
+username = 'christian'
+password = 'c852456!'
+driver = '{ODBC Driver 17 for SQL Server}'
 
-w = Watcher(db_name, table_name, server_name)
-w.run()
+table_name = 'testingConnection'
+
+try:
+    cnxn = pyodbc.connect('DRIVER=' + driver +
+                          ';SERVER=' + server +
+                          ';DATABASE=' + database +
+                          ';UID=' + username +
+                          ';PWD=' + password)
+    cursor = cnxn.cursor()
+    print('Connection established')
+
+    # Create an instance of the Watcher class and run it
+    watcher = Watcher(database, table_name, server, username, password)
+    watcher.run()
+
+except Exception as e:
+    print(f'Cannot connect to SQL server: {e}')

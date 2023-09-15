@@ -1,7 +1,7 @@
 import pandas as pd
 import pyodbc
 
-def txt_to_sql(file_path, db_name, table_name, server_name):
+def txt_to_sql(file_path, db_name, table_name, server_name, username, password):
     try:
         df = pd.read_csv(file_path, sep="\s+")  # assuming tab-separated values
     except Exception as e:
@@ -15,7 +15,7 @@ def txt_to_sql(file_path, db_name, table_name, server_name):
     # Shorten column names to fit SQL Server's limit
     df.columns = [col[:128] for col in df.columns]
 
-    conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE=master;Trusted_Connection=yes'
+    conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE=master;UID={username};PWD={password}'
 
     try:
         conn = pyodbc.connect(conn_str, autocommit=True)
@@ -26,7 +26,7 @@ def txt_to_sql(file_path, db_name, table_name, server_name):
         print(f"Could not create or connect to database: {e}")
         return
 
-    conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE={db_name};Trusted_Connection=yes'
+    conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE={db_name};UID={username};PWD={password}'
 
     try:
         conn = pyodbc.connect(conn_str)
