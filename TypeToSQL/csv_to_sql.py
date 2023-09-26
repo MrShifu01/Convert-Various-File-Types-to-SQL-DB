@@ -10,8 +10,16 @@ def csv_to_sql(file_path, db_name, table_name, server_name, username, password):
     # Step 2: Remove whitespace from strings
     df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
 
+     # Clean column names to remove special characters and limit the length to 128 characters
+    df.columns = ["".join(e for e in col if e.isalnum() or e.isspace()).strip()[:128] for col in df.columns]
+
     # Shorten column names to fit SQL Server's limit
     df.columns = [col[:128] for col in df.columns]
+
+    # Replace NaN values with a default value (e.g., an empty string)
+    df.fillna("", inplace=True)
+
+    print(df.head())
 
     conn_str = f'DRIVER={{SQL Server}};SERVER={server_name};DATABASE=master;UID={username};PWD={password}'
 

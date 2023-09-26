@@ -1,12 +1,22 @@
 import pandas as pd
 import pyodbc
 
-def excel_to_sql(file_path, db_name, table_name, server_name, username, password):
+def excel_to_sql(file_path, db_name, table_name, server_name, username, password, max_rows=38):
     try:
-        df = pd.read_excel(file_path)
+        xls = pd.ExcelFile(file_path)
     except Exception as e:
         print(f"Could not read Excel file {file_path}: {e}")
         return False
+
+    for sheet_name in xls.sheet_names:
+        try:
+            df = pd.read_excel(xls, sheet_name, nrows=38)
+        except Exception as e:
+            print(f"Could not read sheet {sheet_name} in {file_path}: {e}")
+            continue
+        
+        # Add a new column to store the day (sheet name)
+        df['Day'] = sheet_name
 
     # Step 2: Remove whitespace from strings
     df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)

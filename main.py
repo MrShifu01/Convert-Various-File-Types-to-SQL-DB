@@ -7,7 +7,7 @@ username = 'christian'
 password = 'c852456!'
 driver = '{ODBC Driver 17 for SQL Server}'
 
-table_name = 'testingConnection'
+table_name = 'testingGravmax'
 
 try:
     cnxn = pyodbc.connect('DRIVER=' + driver +

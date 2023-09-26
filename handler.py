@@ -7,6 +7,7 @@ from TypeToSQL.json_to_sql import json_to_sql
 from TypeToSQL.txt_to_sql import txt_to_sql
 from TypeToSQL.db_to_sql import db_to_sql
 from TypeToSQL.xml_to_sql import xml_to_sql
+from TypeToSQL.gravmaxExcel import excel_to_sql_gravmax
 
 # from googleapiclient.discovery import build
 # from googleapiclient.errors import HttpError
@@ -50,7 +51,7 @@ class Handler(FileSystemEventHandler):
         elif file_path.endswith(".xlsx") or file_path.endswith(".xls"):
             print(f"New Excel file {file_path} has been created!")
             sleep(1)
-            success = excel_to_sql(file_path, self.db_name, self.table_name, self.server_name, self.username, self.password)
+            success = excel_to_sql_gravmax(file_path, self.db_name, self.table_name, self.server_name, self.username, self.password)
         elif file_path.endswith(".txt"):
             print(f"New Text file {file_path} has been created!")
             sleep(1)
